@@ -1,7 +1,10 @@
 import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import random
+
+load_dotenv('.env')
 
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
@@ -32,9 +35,4 @@ class MatBot(commands.Bot):
 
 
 bot = MatBot()
-
-def get_token():
-    with open("config", "r") as config_file:
-        return config_file.read().split("=")[1]
-
-bot.run(get_token())
+bot.run(os.environ.get("TOKEN"))
