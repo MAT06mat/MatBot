@@ -53,6 +53,7 @@ class MatBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
         self.rep = {"bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello"]}
         self.jeu = []
+        self.admin = os.environ.get("ADMIN")
 
     def get_args(self, message):
         ls = message.content.split(' ')
@@ -103,6 +104,18 @@ class MatBot(commands.Bot):
                     if m != "":
                         new_message = await message.channel.send(m)
                     await message.delete()
+                case '/clear':
+                    if not message.author.id in self.admin:
+                        await message.channel.send("Vous n'avez pas assez de droits pour effectuer cette commande.")
+                        return
+                    try:
+                        m = self.get_args(message=message)
+                        m_int = int(m)
+                        mess = message.channel.history(limit=m_int+1)
+                        async for ms in mess:
+                            await ms.delete()
+                    except:
+                        await message.channel.send("Arguments incorrecte.")
     
 
 bot = MatBot()
