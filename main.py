@@ -28,7 +28,7 @@ class NombreMistere:
             await reaction.message.channel.send("Partie Annulé")
             return True
     
-    async def nombre(self, message):
+    async def message(self, message):
         if self.nb == None:
             return
         try:
@@ -54,6 +54,15 @@ class MatBot(commands.Bot):
         self.rep = {"bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello"]}
         self.jeu = []
 
+    def get_args(self, message):
+        ls = message.content.split(' ')
+        m = ''
+        for i in ls:
+            if i == ls[0]:
+                continue
+            m = m + ' ' + i
+        return m
+    
     async def on_ready(self):
         print(f"{self.user.display_name} est connecté au serveur.")    
     
@@ -69,29 +78,28 @@ class MatBot(commands.Bot):
         else:
             for j in self.jeu:
                 if j.id_user == message.author.id and message.channel == j.channel:
-                    if await j.nombre(message):
+                    if await j.message(message):
                         self.jeu.remove(j)
                     return
             match message.content.lower().split(' ')[0]:
                 case 'bonjour' | 'salut' | 'hey' | 'slt' | 'bjr' | "cc" | "coucou" | "bonsoir" | "bonchoir":
                     await message.add_reaction("👋")
                     await message.channel.send(self.rep["bonjour"][random.randint(0, len(self.rep["bonjour"]))])
-                case 'jouer':
+                case '/jouer':
                     new_message = await message.channel.send("Voulez vous jouer au nombre mistère ?")
                     await new_message.add_reaction("✅")
                     await new_message.add_reaction("❌")
                     self.jeu.append(NombreMistere(id_user=message.author.id, id_message=new_message.id, channel=message.channel))
-                case 'sondage':
-                    await message.add_reaction("✅")
-                    await message.add_reaction("🔸")
-                    await message.add_reaction("❌")
-                case 'repond' | 'répond':
-                    ls = message.content.split(' ')
-                    m = ''
-                    for i in ls:
-                        if i.lower() == "repond" or i.lower() == "répond":
-                            continue
-                        m = m + ' ' + i
+                case '/sondage':
+                    m = self.get_args(message=message)
+                    if m != "":
+                        new_message = await message.channel.send(m)
+                    await new_message.add_reaction("✅")
+                    await new_message.add_reaction("🔸")
+                    await new_message.add_reaction("❌")
+                    await message.delete()
+                case '/repond' | '/répond':
+                    m = self.get_args(message=message)
                     if m != "":
                         new_message = await message.channel.send(m)
                     await message.delete()
