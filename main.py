@@ -17,10 +17,9 @@ class NombreMistere:
         self.channel = channel
         self.nb = None
         self.essais = None
+        self.messages = []
     
     async def start(self, reaction):
-        if self.nb != None:
-            return
         if reaction.__str__() == "✅":
             self.nb = random.randint(1, 100)
             self.essais = 0
@@ -36,6 +35,7 @@ class NombreMistere:
             message_int = int(message.content)
         except:
             await message.channel.send("Ceci n'est pas un nombre")
+            return
         if message_int > self.nb:
             self.essais += 1
             await message.channel.send(f"Mon nombre est plus petit que {message_int}")
@@ -44,7 +44,7 @@ class NombreMistere:
             await message.channel.send(f"Mon nombre est plus grand que {message_int}")
         else:
             await message.channel.send(f"Bien joué ! Mon nombre est bien : {message_int}")
-            await message.channel.send(f"Je te met un score de {20-self.essais*2}/20")
+            await message.channel.send(f"Je te met un score de {20-self.essais}/20")
             return True
 
 
