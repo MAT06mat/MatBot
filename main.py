@@ -10,7 +10,6 @@ load_dotenv('.env')
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
 
-
 class NombreMistere:
     def __init__(self, id_user, id_message, channel):
         self.id_user = id_user
@@ -55,6 +54,10 @@ class MatBot(commands.Bot):
         self.rep = {"bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello"]}
         self.jeu = []
         self.admin = [861240797659136012]
+        self.ban = [] # [1072216355757113384]
+        self.pronom = ["Je", "Tu", "Il"]
+        self.verbe = ["mange", "fais", "roule", "regarde", "ajoute"]
+        self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
 
     def get_args(self, message):
         ls = message.content.split(' ')
@@ -68,15 +71,15 @@ class MatBot(commands.Bot):
     async def on_ready(self):
         print(f"{self.user.display_name} est connecté au serveur.")    
     
-    async def on_member_join(member):
-        await member.create_dm()
-        await member.dm_channel.send(f'Salut {member.name}, bienvenu sur le server discord de test !')
-    
     async def on_message(self, message):
-        print(message.author.name+": "+message.content)
+        if message.channel.id != 1132312138980012135:
+            print(message.author.name+": "+message.content)
+            # await self.get_channel(1132312138980012135).send(message.author.name+": "+message.content)
         
         if message.author.id == 1069896287765401630:
             return
+        elif message.author.id in self.ban:
+            await message.delete()
         else:
             for j in self.jeu:
                 if j.id_user == message.author.id and message.channel == j.channel:
@@ -122,6 +125,20 @@ class MatBot(commands.Bot):
                     await message.channel.send(f"Voici ce que j'ai trouvé :")
                     for lien in search(m, num_results=3, lang="fr", timeout=2):
                         await message.channel.send(f" - {lien}")
+                case "/alea" | "/aléa":
+                    await message.channel.send(f"{random.choice(self.pronom)} {random.choice(self.verbe)} {random.choice(self.gn)}.")
+                case "/pronom":
+                    m = self.get_args(message=message)
+                    self.pronom.append(m)
+                    await message.channel.send(f"Le pronom '{m}' à bien été ajouté !")
+                case "/gn":
+                    m = self.get_args(message=message)
+                    self.gn.append(m)
+                    await message.channel.send(f"Le groupe nominal '{m}' à bien été ajouté !")
+                case "/verbe":
+                    m = self.get_args(message=message)
+                    self.gn.append(m)
+                    await message.channel.send(f"Le verbe '{m}' à bien été ajouté !")
                     
     
 
