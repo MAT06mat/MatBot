@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import random
+from googlesearch import search
 
 load_dotenv('.env')
 
@@ -53,7 +54,7 @@ class MatBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
         self.rep = {"bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello"]}
         self.jeu = []
-        self.admin = os.environ.get("ADMIN")
+        self.admin = [861240797659136012]
 
     def get_args(self, message):
         ls = message.content.split(' ')
@@ -69,7 +70,7 @@ class MatBot(commands.Bot):
     
     async def on_member_join(member):
         await member.create_dm()
-        await member.dm_channel.send(f'Hi {member.name}, welcome to the test Discord server!')
+        await member.dm_channel.send(f'Salut {member.name}, bienvenu sur le server discord de test !')
     
     async def on_message(self, message):
         print(message.author.name+": "+message.content)
@@ -116,6 +117,12 @@ class MatBot(commands.Bot):
                             await ms.delete()
                     except:
                         await message.channel.send("Arguments incorrecte.")
+                case "/search":
+                    m = self.get_args(message=message)
+                    await message.channel.send(f"Voici ce que j'ai trouvé :")
+                    for lien in search(m, num_results=3, lang="fr", timeout=2):
+                        await message.channel.send(f" - {lien}")
+                    
     
 
 bot = MatBot()
