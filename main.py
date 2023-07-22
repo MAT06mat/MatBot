@@ -137,7 +137,7 @@ class MatBot(commands.Bot):
                     await message.channel.send(f"Le groupe nominal '{m}' à bien été ajouté !")
                 case "/verbe":
                     m = self.get_args(message=message)
-                    self.gn.append(m)
+                    self.verbe.append(m)
                     await message.channel.send(f"Le verbe '{m}' à bien été ajouté !")
                     
     
