@@ -96,38 +96,40 @@ class MatBot(commands.Bot):
 
 bot = MatBot()
 
-@bot.command(name="repond", help="Répète ce que tu veux")
-async def repond(ctx, *arg):
-    await ctx.message.delete()
-    await ctx.send(" ".join(arg))
+@bot.hybrid_command(name="repond", help="Répète ce que tu veux")
+async def repond(ctx, *, arg):
+    if ctx.message:
+        await ctx.message.delete()
+    await ctx.send(arg)
 
-@bot.command(name="jouer", help="Joue au nombre mistère")
+@bot.hybrid_command(name="jouer", help="Joue au nombre mistère")
 async def jouer(ctx):
     new_message = await ctx.send("Voulez vous jouer au nombre mistère ?")
     await new_message.add_reaction("✅")
     await new_message.add_reaction("❌")
     bot.jeu.append(NombreMistere(id_user=ctx.message.author.id, id_message=new_message.id, channel=ctx.channel))
 
-@bot.command(name="sondage", help="Créé un sondage")
-async def sondage(ctx, *args):
-    await ctx.message.delete()
-    new_message = await ctx.send("**Nouveau Sondage :**\n"+" ".join(args))
+@bot.hybrid_command(name="sondage", help="Créé un sondage")
+async def sondage(ctx, *, args):
+    if ctx.message:
+        await ctx.message.delete()
+    new_message = await ctx.send(f"**Nouveau Sondage de {ctx.author}:**\n{args}")
     await new_message.add_reaction("✅")
     await new_message.add_reaction("🔸")
     await new_message.add_reaction("❌")
 
-@bot.command(name="research", help="Fait une recherche google")
-async def research(ctx, num_results, *args):
+@bot.hybrid_command(name="research", help="Fait une recherche google")
+async def research(ctx, num_results, *, args):
     try:
         num_results = int(num_results)
     except:
         await ctx.send(f"ERROR: {bot.command_prefix}research [nombre_de_résultats] [votre_recherche]")
         return
     await ctx.send(f"Voici ce que j'ai trouvé :")
-    for lien in search(" ".join(args), num_results=num_results, lang="fr", timeout=2):
+    for lien in search(args, num_results=num_results, lang="fr", timeout=2):
         await ctx.send(f" - {lien}")
 
-@bot.command(name="clear", help="Efface des messages")
+@bot.hybrid_command(name="clear", help="Efface des messages")
 @bot.is_owner()
 async def clear(ctx, nb):
     try:
@@ -138,27 +140,28 @@ async def clear(ctx, nb):
     except:
         await ctx.send(f"ERROR: {bot.command_prefix}clear [nombre_de_messages_à_effacer]")
 
-@bot.command(name="alea", help="Créé une phrase aléatoire")
+@bot.hybrid_command(name="alea", help="Créé une phrase aléatoire")
 async def alea(ctx):
     await ctx.send(f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
 
-@bot.command(name="pronom", help="Ajoute un pronom pour la création de phrase aléatoire")
-async def add_pronom(ctx, pronom):
+@bot.hybrid_command(name="pronom", help="Ajoute un pronom pour la création de phrase aléatoire")
+async def add_pronom(ctx, *, pronom):
     bot.pronom.append(pronom)
     await ctx.send(f"Le pronom '{pronom}' à bien été ajouté !")
 
-@bot.command(name="verbe", help="Ajoute un verbe pour la création de phrase aléatoire")
-async def add_verbe(ctx, verbe):
+@bot.hybrid_command(name="verbe", help="Ajoute un verbe pour la création de phrase aléatoire")
+async def add_verbe(ctx, *, verbe):
     bot.verbe.append(verbe)
     await ctx.send(f"Le verbe '{verbe}' à bien été ajouté !")
 
-@bot.command(name="gn", help="Ajoute un gn pour la création de phrase aléatoire")
-async def add_gn(ctx, gn):
+@bot.hybrid_command(name="gn", help="Ajoute un gn pour la création de phrase aléatoire")
+async def add_gn(ctx, *, gn):
     bot.gn.append(gn)
     await ctx.send(f"Le gn '{gn}' à bien été ajouté !")
 
 @bot.hybrid_command()
 async def test(ctx):
     await ctx.send("This is a hybrid command!")
+
 
 bot.run(os.environ.get("TOKEN"))
