@@ -5,7 +5,6 @@ from discord.ext import commands
 import random
 from googlesearch import search
 import json
-import emoji
 
 load_dotenv('.env')
 
@@ -113,7 +112,7 @@ async def jouer(ctx):
     bot.jeu.append(NombreMistere(id_user=ctx.message.author.id, id_message=new_message.id, channel=ctx.channel))
 
 @bot.hybrid_command(name="sondage", help="Créé un sondage")
-async def sondage(ctx, *, args):
+async def sondage(ctx, *, args: str):
     if ctx.message:
         await ctx.message.delete()
     new_message = await ctx.send(f"**Nouveau Sondage de {ctx.author}:**\n{args}")
@@ -122,7 +121,7 @@ async def sondage(ctx, *, args):
     await new_message.add_reaction("❌")
 
 @bot.hybrid_command(name="research", help="Fait une recherche google")
-async def research(ctx, num_results, *, args):
+async def research(ctx, num_results: int = 1, *, args: str):
     try:
         num_results = int(num_results)
     except:
@@ -134,7 +133,7 @@ async def research(ctx, num_results, *, args):
 
 @bot.hybrid_command(name="clear", help="Efface des messages")
 @bot.is_owner()
-async def clear(ctx, nb):
+async def clear(ctx, nb: int = 1):
     try:
         nb = int(nb)
         messages = ctx.history(limit=nb+1)
@@ -148,22 +147,22 @@ async def alea(ctx):
     await ctx.send(f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
 
 @bot.hybrid_command(name="pronom", help="Ajoute un pronom pour la création de phrase aléatoire")
-async def add_pronom(ctx, *, pronom):
+async def add_pronom(ctx, *, pronom: str):
     await ctx.send(f"Le pronom '{pronom}' à bien été ajouté !")
     bot.pronom.append(pronom)
 
 @bot.hybrid_command(name="verbe", help="Ajoute un verbe pour la création de phrase aléatoire")
-async def add_verbe(ctx, *, verbe):
+async def add_verbe(ctx, *, verbe: str):
     await ctx.send(f"Le verbe '{verbe}' à bien été ajouté !")
     bot.verbe.append(verbe)
 
 @bot.hybrid_command(name="gn", help="Ajoute un gn pour la création de phrase aléatoire")
-async def add_gn(ctx, *, gn):
+async def add_gn(ctx, *, gn: str):
     await ctx.send(f"Le gn '{gn}' à bien été ajouté !")
     bot.gn.append(gn)
 
 @bot.hybrid_command(name="emoji", help="Ajoute des emojis aléatoires sous le dernier message")
-async def add_emoji(ctx, nb):
+async def emoji(ctx, nb: int = 1):
     reaction = bot.data["Reactions"]
     if int(nb) > 20:
         nb = 20
@@ -172,6 +171,12 @@ async def add_emoji(ctx, nb):
         for i in range(int(nb)):
             emoji = random.choice(reaction)["emoji"]
             await message.add_reaction(emoji)
+
+@bot.hybrid_command(name="add_emoji", help="Ajoute l'emoji selectionné sous le dernier message")
+async def add_emoji(ctx, emoji: discord.Emoji):
+    await ctx.message.delete()
+    async for message in ctx.channel.history(limit=1):
+        await message.add_reaction(emoji)
 
 
 bot.run(os.environ.get("TOKEN"))
