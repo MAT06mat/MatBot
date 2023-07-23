@@ -52,7 +52,7 @@ class MatBot(commands.Bot):
         self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello", "Comment tu vas ?", "Bonjour à tous !"]}
         self.jeu = []
         self.admin = [861240797659136012]
-        self.ban = [] # [1072216355757113384]
+        self.ban = []
         self.pronom = ["Je", "Tu", "Il"]
         self.verbe = ["mange", "fais", "roule", "regarde", "ajoute"]
         self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
@@ -70,7 +70,6 @@ class MatBot(commands.Bot):
     async def on_message(self, message):
         if message.channel.id != 1132312138980012135:
             print(message.author.name+": "+message.content)
-            # await self.get_channel(1132312138980012135).send(message.author.name+": "+message.content)
         
         if message.author.id == 1069896287765401630:
             return await super().on_message(message)
@@ -178,5 +177,22 @@ async def add_emoji(ctx, emoji: discord.Emoji):
     async for message in ctx.channel.history(limit=1):
         await message.add_reaction(emoji)
 
+@bot.hybrid_command(name="ban", help="Fait en sorte qu'un utilisateur ne puisse plus écrire")
+@bot.is_owner()
+async def ban(ctx, user: discord.Member):
+    if user.id in bot.ban:
+        await ctx.send(f"Le membre {user} est déjà banni.")
+    else:
+        bot.ban.append(user.id)
+        await ctx.send(f"Le membre {user} à été banni !")
+
+@bot.hybrid_command(name="unban", help="Fait en sorte qu'un utilisateur ne sois plus banni")
+@bot.is_owner()
+async def ban(ctx, user: discord.Member):
+    if user.id in bot.ban:
+        bot.ban.remove(user.id)
+        await ctx.send(f"Le membre {user} à été débanni !")
+    else:
+        await ctx.send(f"Le membre {user} n'est pas banni.")
 
 bot.run(os.environ.get("TOKEN"))
