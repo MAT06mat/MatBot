@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 import random
 from googlesearch import search
+import json
 
 load_dotenv('.env')
 
@@ -48,7 +49,7 @@ class NombreMistere:
 class MatBot(commands.Bot):
     def __init__(self) -> None:
         super().__init__(command_prefix="!", intents=discord.Intents.all(), description="Ceci est un bot test créé par MAT06mat !")
-        self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello"]}
+        self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello", "Comment tu vas ?", "Bonjour à tous !"]}
         self.jeu = []
         self.admin = [861240797659136012]
         self.ban = [] # [1072216355757113384]
@@ -56,8 +57,13 @@ class MatBot(commands.Bot):
         self.verbe = ["mange", "fais", "roule", "regarde", "ajoute"]
         self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
     
+    def is_owner(self):
+        async def predicate(ctx):
+            return ctx.author.id in [861240797659136012]
+        return commands.check(predicate)
+    
     async def on_ready(self):
-        print(f"{self.user.display_name} est connecté au serveur.")    
+        print(f"{self.user.display_name} est connecté au serveur.")
     
     async def on_message(self, message):
         if message.channel.id != 1132312138980012135:
@@ -77,33 +83,32 @@ class MatBot(commands.Bot):
                     return await super().on_message(message)
             match message.content.lower().split(' ')[0]:
                 case 'bonjour' | 'salut' | 'hey' | 'slt' | 'bjr' | "cc" | "coucou" | "bonsoir" | "bonchoir" | "bienvenue":
-                    await message.add_reaction("👋")
                     await message.channel.send(random.choice(self.rep["Bonjour"]))
         return await super().on_message(message)
-                
+
+    async def on_reaction_add(self, reaction, user):
+        for jeu in self.jeu:
+            if jeu.id_user == user.id and jeu.id_message == reaction.message.id and reaction.message.channel.id == jeu.channel.id:
+                if await jeu.start(reaction):
+                    self.jeu.remove(jeu)
+
+
 
 bot = MatBot()
 
-@bot.event
-async def on_reaction_add(reaction, user):
-    for jeu in bot.jeu:
-        if jeu.id_user == user.id and jeu.id_message == reaction.message.id and reaction.message.channel.id == jeu.channel.id:
-            if await jeu.start(reaction):
-                bot.jeu.remove(jeu)
-
-@bot.command(name="repond")
-async def test(ctx, arg):
+@bot.command(name="repond", help="Répète ce que tu veux")
+async def repond(ctx, *arg):
     await ctx.message.delete()
-    await ctx.send(arg)
+    await ctx.send(" ".join(arg))
 
-@bot.command(name="jouer")
+@bot.command(name="jouer", help="Joue au nombre mistère")
 async def jouer(ctx):
     new_message = await ctx.send("Voulez vous jouer au nombre mistère ?")
     await new_message.add_reaction("✅")
     await new_message.add_reaction("❌")
     bot.jeu.append(NombreMistere(id_user=ctx.message.author.id, id_message=new_message.id, channel=ctx.channel))
 
-@bot.command(name="sondage")
+@bot.command(name="sondage", help="Créé un sondage")
 async def sondage(ctx, *args):
     await ctx.message.delete()
     new_message = await ctx.send("**Nouveau Sondage :**\n"+" ".join(args))
@@ -111,7 +116,7 @@ async def sondage(ctx, *args):
     await new_message.add_reaction("🔸")
     await new_message.add_reaction("❌")
 
-@bot.command(name="research")
+@bot.command(name="research", help="Fait une recherche google")
 async def research(ctx, num_results, *args):
     try:
         num_results = int(num_results)
@@ -122,11 +127,9 @@ async def research(ctx, num_results, *args):
     for lien in search(" ".join(args), num_results=num_results, lang="fr", timeout=2):
         await ctx.send(f" - {lien}")
 
-@bot.command(name="clear")
+@bot.command(name="clear", help="Efface des messages")
+@bot.is_owner()
 async def clear(ctx, nb):
-    if not ctx.message.author.id in bot.admin:
-        await ctx.send("Vous n'avez pas assez de droits pour effectuer cette commande.")
-        return
     try:
         nb = int(nb)
         messages = ctx.history(limit=nb+1)
@@ -135,23 +138,27 @@ async def clear(ctx, nb):
     except:
         await ctx.send(f"ERROR: {bot.command_prefix}clear [nombre_de_messages_à_effacer]")
 
-@bot.command(name="alea")
+@bot.command(name="alea", help="Créé une phrase aléatoire")
 async def alea(ctx):
     await ctx.send(f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
 
-@bot.command(name="pronom")
-async def pronom(ctx, pronom):
+@bot.command(name="pronom", help="Ajoute un pronom pour la création de phrase aléatoire")
+async def add_pronom(ctx, pronom):
     bot.pronom.append(pronom)
     await ctx.send(f"Le pronom '{pronom}' à bien été ajouté !")
 
-@bot.command(name="verbe")
-async def pronom(ctx, verbe):
+@bot.command(name="verbe", help="Ajoute un verbe pour la création de phrase aléatoire")
+async def add_verbe(ctx, verbe):
     bot.verbe.append(verbe)
     await ctx.send(f"Le verbe '{verbe}' à bien été ajouté !")
 
-@bot.command(name="gn")
-async def pronom(ctx, gn):
+@bot.command(name="gn", help="Ajoute un gn pour la création de phrase aléatoire")
+async def add_gn(ctx, gn):
     bot.gn.append(gn)
     await ctx.send(f"Le gn '{gn}' à bien été ajouté !")
+
+@bot.hybrid_command()
+async def test(ctx):
+    await ctx.send("This is a hybrid command!")
 
 bot.run(os.environ.get("TOKEN"))
