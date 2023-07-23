@@ -61,7 +61,11 @@ class MatBot(commands.Bot):
     
     def is_owner(self):
         async def predicate(ctx):
-            return ctx.author.id in [861240797659136012]
+            if ctx.author.id in self.admin:
+                return True
+            else:
+                await ctx.channel.send("Vous n'avez pas assez de droits pour executer cette commande !")
+                return False
         return commands.check(predicate)
     
     async def on_ready(self):
