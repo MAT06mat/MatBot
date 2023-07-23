@@ -5,6 +5,7 @@ from discord.ext import commands
 import random
 from googlesearch import search
 import json
+import emoji
 
 load_dotenv('.env')
 
@@ -56,6 +57,8 @@ class MatBot(commands.Bot):
         self.pronom = ["Je", "Tu", "Il"]
         self.verbe = ["mange", "fais", "roule", "regarde", "ajoute"]
         self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
+        with open('data.json', "r", encoding="utf-8") as file:
+            self.data = json.load(file)
     
     def is_owner(self):
         async def predicate(ctx):
@@ -146,22 +149,29 @@ async def alea(ctx):
 
 @bot.hybrid_command(name="pronom", help="Ajoute un pronom pour la création de phrase aléatoire")
 async def add_pronom(ctx, *, pronom):
-    bot.pronom.append(pronom)
     await ctx.send(f"Le pronom '{pronom}' à bien été ajouté !")
+    bot.pronom.append(pronom)
 
 @bot.hybrid_command(name="verbe", help="Ajoute un verbe pour la création de phrase aléatoire")
 async def add_verbe(ctx, *, verbe):
-    bot.verbe.append(verbe)
     await ctx.send(f"Le verbe '{verbe}' à bien été ajouté !")
+    bot.verbe.append(verbe)
 
 @bot.hybrid_command(name="gn", help="Ajoute un gn pour la création de phrase aléatoire")
 async def add_gn(ctx, *, gn):
-    bot.gn.append(gn)
     await ctx.send(f"Le gn '{gn}' à bien été ajouté !")
+    bot.gn.append(gn)
 
-@bot.hybrid_command()
-async def test(ctx):
-    await ctx.send("This is a hybrid command!")
+@bot.hybrid_command(name="emoji", help="Ajoute des emojis aléatoires sous le dernier message")
+async def add_emoji(ctx, nb):
+    reaction = bot.data["Reactions"]
+    if int(nb) > 20:
+        nb = 20
+    await ctx.message.delete()
+    async for message in ctx.channel.history(limit=1):
+        for i in range(int(nb)):
+            emoji = random.choice(reaction)["emoji"]
+            await message.add_reaction(emoji)
 
 
 bot.run(os.environ.get("TOKEN"))
