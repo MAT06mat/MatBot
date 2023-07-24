@@ -48,7 +48,7 @@ class NombreMistere:
 
 class MatBot(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="!", intents=discord.Intents.all(), description="Ceci est un bot test créé par MAT06mat !")
+        super().__init__(command_prefix="!", intents=discord.Intents.all(), description="Voici la liste de mes commandes :")
         self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello", "Comment tu vas ?", "Bonjour à tous !"]}
         self.jeu = []
         self.admin = [861240797659136012]
@@ -167,13 +167,18 @@ async def add_gn(ctx, *, gn: str):
 @bot.hybrid_command(name="emoji", help="Ajoute des emojis aléatoires sous le dernier message")
 async def emoji(ctx, nb: int = 1):
     reaction = bot.data["Reactions"]
-    if int(nb) > 20:
-        nb = 20
     await ctx.message.delete()
     async for message in ctx.channel.history(limit=1):
         for i in range(int(nb)):
             emoji = random.choice(reaction)["emoji"]
-            await message.add_reaction(emoji)
+            try:
+                await message.add_reaction(emoji)
+            except:
+                try:
+                    emoji = random.choice(reaction)["emoji"]
+                    await message.add_reaction(emoji)
+                except:
+                    return
 
 @bot.hybrid_command(name="add_emoji", help="Ajoute l'emoji selectionné sous le dernier message")
 async def add_emoji(ctx, emoji: discord.Emoji):
@@ -198,5 +203,7 @@ async def ban(ctx, user: discord.Member):
         await ctx.send(f"Le membre {user} à été débanni !")
     else:
         await ctx.send(f"Le membre {user} n'est pas banni.")
+
+
 
 bot.run(os.environ.get("TOKEN"))
