@@ -120,7 +120,7 @@ async def sondage(ctx, *, args: str):
         await ctx.message.delete()
     new_message = await ctx.send(f"**Nouveau Sondage de {ctx.author}:**\n{args}")
     await new_message.add_reaction("✅")
-    await new_message.add_reaction("🔸")
+    await new_message.add_reaction("➖")
     await new_message.add_reaction("❌")
 
 @bot.hybrid_command(name="research", help="Fait une recherche google")
