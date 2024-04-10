@@ -197,7 +197,7 @@ async def ban(ctx, user: discord.Member):
 
 @bot.hybrid_command(name="unban", help="Fait en sorte qu'un utilisateur ne sois plus banni")
 @bot.is_owner()
-async def ban(ctx, user: discord.Member):
+async def unban(ctx, user: discord.Member):
     if user.id in bot.ban:
         bot.ban.remove(user.id)
         await ctx.send(f"Le membre {user} à été débanni !")
