@@ -1,12 +1,11 @@
-import os
 from dotenv import load_dotenv
-import discord
 from discord.ext import commands
-import random
 from googlesearch import search
-import json
+import discord, os, random, json
+
 
 load_dotenv('.env')
+
 
 class NombreMistere:
     def __init__(self, id_user, id_message, channel):
@@ -60,8 +59,8 @@ class MatBot(commands.Bot):
             self.data = json.load(file)
     
     def is_owner(self):
-        async def predicate(ctx):
-            if ctx.author.id in self.admin:
+        async def predicate(ctx: discord.Interaction):
+            if ctx.user.id in self.admin:
                 return True
             else:
                 await ctx.channel.send("Vous n'avez pas assez de droits pour executer cette commande !")
@@ -71,9 +70,9 @@ class MatBot(commands.Bot):
     async def on_ready(self):
         print(f"{self.user.display_name} est connecté au serveur.")
     
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.channel.id != 1132312138980012135:
-            print(message.author.name+": "+message.content)
+            print(f"{message.guild.name} - {message.channel.name} : {message.author.name} -> {message.content}")
         
         if message.author.id == 1069896287765401630:
             return await super().on_message(message)
@@ -101,73 +100,74 @@ class MatBot(commands.Bot):
 
 bot = MatBot()
 
-@bot.hybrid_command(name="repond", help="Répète ce que tu veux")
-async def repond(ctx, *, arg):
-    if ctx.message:
-        await ctx.message.delete()
+
+@bot.slash_command(name="repond", description="Répète ce que tu veux")
+async def repond(ctx: discord.Interaction, *, arg):    
+    ctx.response.send_message("Ok", ephemeral=True)
     await ctx.send(arg)
 
-@bot.hybrid_command(name="jouer", help="Joue au nombre mistère")
-async def jouer(ctx):
-    new_message = await ctx.send("Voulez vous jouer au nombre mistère ?")
+@bot.slash_command(name="jouer", description="Joue au nombre mistère")
+async def jouer(ctx: discord.Interaction):
+    new_message = await ctx.response.send_message("Voulez vous jouer au nombre mistère ?")
     await new_message.add_reaction("✅")
     await new_message.add_reaction("❌")
-    bot.jeu.append(NombreMistere(id_user=ctx.message.author.id, id_message=new_message.id, channel=ctx.channel))
+    bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=new_message.id, channel=ctx.channel))
 
-@bot.hybrid_command(name="sondage", help="Créé un sondage")
-async def sondage(ctx, *, args: str):
+@bot.slash_command(name="sondage", description="Créé un sondage")
+async def sondage(ctx: discord.Interaction, *, args: str):
     if ctx.message:
         await ctx.message.delete()
-    new_message = await ctx.send(f"**Nouveau Sondage de {ctx.author}:**\n{args}")
+    new_message = await ctx.response.send_message(f"**Nouveau Sondage de {ctx.user.name}:**\n{args}")
     await new_message.add_reaction("✅")
     await new_message.add_reaction("➖")
     await new_message.add_reaction("❌")
 
-@bot.hybrid_command(name="research", help="Fait une recherche google")
-async def research(ctx, num_results: int = 1, *, args: str):
+@bot.slash_command(name="research", description="Fait une recherche google")
+async def research(ctx: discord.Interaction, num_results: int, *, args: str):
     try:
         num_results = int(num_results)
     except:
-        await ctx.send(f"ERROR: {bot.command_prefix}research [nombre_de_résultats] [votre_recherche]")
+        await ctx.response.send_message(f"ERROR: {bot.command_prefix}research [nombre_de_résultats] [votre_recherche]", ephemeral=True)
         return
-    await ctx.send(f"Voici ce que j'ai trouvé :")
+    await ctx.response.send_message(f"Voici ce que j'ai trouvé :")
     for lien in search(args, num_results=num_results, lang="fr", timeout=2):
         await ctx.send(f" - {lien}")
 
-@bot.hybrid_command(name="clear", help="Efface des messages")
+@bot.slash_command(name="clear", description="Efface des messages")
 @bot.is_owner()
-async def clear(ctx, nb: int = 1):
+async def clear(ctx: discord.Interaction, nb: int = 1):
     try:
         nb = int(nb)
         messages = ctx.history(limit=nb+1)
         async for message in messages:
             await message.delete()
+        ctx.response.send_message(f"{nb} message(s) ont bien été supprimés", ephemeral=True)
     except:
-        await ctx.send(f"ERROR: {bot.command_prefix}clear [nombre_de_messages_à_effacer]")
+        await ctx.response.send_message(f"ERROR: {bot.command_prefix}clear [nombre_de_messages_à_effacer]", ephemeral=True)
 
-@bot.hybrid_command(name="alea", help="Créé une phrase aléatoire")
-async def alea(ctx):
-    await ctx.send(f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
+@bot.slash_command(name="alea", description="Créé une phrase aléatoire")
+async def alea(ctx: discord.Interaction):
+    await ctx.response.send_message(f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
 
-@bot.hybrid_command(name="pronom", help="Ajoute un pronom pour la création de phrase aléatoire")
-async def add_pronom(ctx, *, pronom: str):
-    await ctx.send(f"Le pronom '{pronom}' à bien été ajouté !")
+@bot.slash_command(name="pronom", description="Ajoute un pronom pour la création de phrase aléatoire")
+async def add_pronom(ctx: discord.Interaction, *, pronom: str):
+    await ctx.response.send_message(f"Le pronom '{pronom}' à bien été ajouté !", ephemeral=True)
     bot.pronom.append(pronom)
 
-@bot.hybrid_command(name="verbe", help="Ajoute un verbe pour la création de phrase aléatoire")
-async def add_verbe(ctx, *, verbe: str):
-    await ctx.send(f"Le verbe '{verbe}' à bien été ajouté !")
+@bot.slash_command(name="verbe", description="Ajoute un verbe pour la création de phrase aléatoire")
+async def add_verbe(ctx: discord.Interaction, *, verbe: str):
+    await ctx.response.send_message(f"Le verbe '{verbe}' à bien été ajouté !", ephemeral=True)
     bot.verbe.append(verbe)
 
-@bot.hybrid_command(name="gn", help="Ajoute un gn pour la création de phrase aléatoire")
-async def add_gn(ctx, *, gn: str):
-    await ctx.send(f"Le gn '{gn}' à bien été ajouté !")
+@bot.slash_command(name="gn", description="Ajoute un groupe nominal pour la création de phrase aléatoire")
+async def add_gn(ctx: discord.Interaction, *, gn: str):
+    await ctx.response.send_message(f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
     bot.gn.append(gn)
 
-@bot.hybrid_command(name="emoji", help="Ajoute des emojis aléatoires sous le dernier message")
-async def emoji(ctx, nb: int = 1):
+@bot.slash_command(name="emoji", description="Ajoute des emojis aléatoires sous le dernier message")
+async def emoji(ctx: discord.Interaction, nb: int = 1):
     reaction = bot.data["Reactions"]
-    await ctx.message.delete()
+    ctx.response.send_message("Ok", ephemeral=True)
     async for message in ctx.channel.history(limit=1):
         for i in range(int(nb)):
             emoji = random.choice(reaction)["emoji"]
@@ -180,29 +180,29 @@ async def emoji(ctx, nb: int = 1):
                 except:
                     return
 
-@bot.hybrid_command(name="add_emoji", help="Ajoute l'emoji selectionné sous le dernier message")
-async def add_emoji(ctx, emoji: discord.Emoji):
-    await ctx.message.delete()
+@bot.slash_command(name="add_emoji", description="Ajoute des emojis aléatoires sous le dernier message")
+async def add_emoji(ctx: discord.Interaction, emoji):
     async for message in ctx.channel.history(limit=1):
         await message.add_reaction(emoji)
+        await ctx.response.send_message("Ok", ephemeral=True)
 
-@bot.hybrid_command(name="ban", help="Fait en sorte qu'un utilisateur ne puisse plus écrire")
+@bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
 @bot.is_owner()
-async def ban(ctx, user: discord.Member):
+async def ban(ctx: discord.Interaction, user: discord.Member):
     if user.id in bot.ban:
-        await ctx.send(f"Le membre {user} est déjà banni.")
+        await ctx.response.send_message(f"Le membre {user} est déjà banni.", ephemeral=True)
     else:
         bot.ban.append(user.id)
-        await ctx.send(f"Le membre {user} à été banni !")
+        await ctx.response.send_message(f"Le membre {user} à été banni !")
 
-@bot.hybrid_command(name="unban", help="Fait en sorte qu'un utilisateur ne sois plus banni")
+@bot.slash_command(name="unban", description="Fait en sorte qu'un utilisateur ne sois plus banni")
 @bot.is_owner()
-async def unban(ctx, user: discord.Member):
+async def unban(ctx: discord.Interaction, user: discord.Member):
     if user.id in bot.ban:
         bot.ban.remove(user.id)
-        await ctx.send(f"Le membre {user} à été débanni !")
+        await ctx.response.send_message(f"Le membre {user} à été débanni !")
     else:
-        await ctx.send(f"Le membre {user} n'est pas banni.")
+        await ctx.response.send_message(f"Le membre {user} n'est pas banni.", ephemeral=True)
 
 
 
