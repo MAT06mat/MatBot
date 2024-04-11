@@ -72,7 +72,10 @@ class MatBot(commands.Bot):
     
     async def on_message(self, message: discord.Message):
         if message.channel.id != 1132312138980012135:
-            print(f"{message.guild.name} - {message.channel.name} : {message.author.name} -> {message.content}")
+            try:
+                print(f"{message.guild.name} - {message.channel.name} : {message.author.name} -> {message.content}")
+            except AttributeError:
+                return await super().on_message(message)
         
         if message.author.id == 1069896287765401630:
             return await super().on_message(message)
@@ -102,9 +105,8 @@ bot = MatBot()
 
 
 @bot.slash_command(name="repond", description="Répète ce que tu veux")
-async def repond(ctx: discord.Interaction, *, arg):    
-    ctx.response.send_message("Ok", ephemeral=True)
-    await ctx.send(arg)
+async def repond(ctx: discord.Interaction, *, arg: str):    
+    await ctx.response.send_message(arg)
 
 @bot.slash_command(name="jouer", description="Joue au nombre mistère")
 async def jouer(ctx: discord.Interaction):
@@ -129,19 +131,25 @@ async def research(ctx: discord.Interaction, num_results: int, *, args: str):
     except:
         await ctx.response.send_message(f"ERROR: {bot.command_prefix}research [nombre_de_résultats] [votre_recherche]", ephemeral=True)
         return
-    await ctx.response.send_message(f"Voici ce que j'ai trouvé :")
-    for lien in search(args, num_results=num_results, lang="fr", timeout=2):
-        await ctx.send(f" - {lien}")
+    
+    liste = "\n"
+    liens = search(args, num_results=num_results, lang="fr", timeout=2)
+    liens = list(liens)
+    while len(liens) > num_results:
+        liens.pop(-1)
+    for lien in liens:
+        liste += f"- {lien}\n"
+    await ctx.response.send_message(f"Voici ce que j'ai trouvé :{liste}")
 
 @bot.slash_command(name="clear", description="Efface des messages")
 @bot.is_owner()
-async def clear(ctx: discord.Interaction, nb: int = 1):
+async def clear(ctx: discord.Interaction, nb: int):
     try:
         nb = int(nb)
-        messages = ctx.history(limit=nb+1)
+        messages = ctx.history(limit=nb)
+        await ctx.response.defer(ephemeral=True, invisible=False)
         async for message in messages:
             await message.delete()
-        ctx.response.send_message(f"{nb} message(s) ont bien été supprimés", ephemeral=True)
     except:
         await ctx.response.send_message(f"ERROR: {bot.command_prefix}clear [nombre_de_messages_à_effacer]", ephemeral=True)
 
