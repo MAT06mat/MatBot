@@ -136,8 +136,8 @@ async def translate(ctx: discord.Interaction, *, text: str):
     await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title='Translated text :', description=translated_text, color=discord.Color.brand_green()))
 
 @bot.slash_command(name="repond", description="Répète ce que tu veux")
-async def repond(ctx: discord.Interaction, *, arg: str):    
-    await ctx.response.send_message(arg)
+async def repond(ctx: discord.Interaction, *, text: str):    
+    await ctx.response.send_message(text)
 
 @bot.slash_command(name="jouer", description="Joue au nombre mistère")
 async def jouer(ctx: discord.Interaction):
@@ -147,16 +147,16 @@ async def jouer(ctx: discord.Interaction):
     bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=new_message.id, channel=ctx.channel))
 
 @bot.slash_command(name="sondage", description="Créé un sondage")
-async def sondage(ctx: discord.Interaction, *, args: str):
+async def sondage(ctx: discord.Interaction, *, question: str):
     if ctx.message:
         await ctx.message.delete()
-    new_message = await ctx.response.send_message(f"**Nouveau Sondage de {ctx.user.name}:**\n{args}")
+    new_message = await ctx.response.send_message(f"**Nouveau Sondage de {ctx.user.name}:**\n{question}")
     await new_message.add_reaction("✅")
     await new_message.add_reaction("➖")
     await new_message.add_reaction("❌")
 
 @bot.slash_command(name="research", description="Fait une recherche google")
-async def research(ctx: discord.Interaction, num_results: int, *, args: str):
+async def research(ctx: discord.Interaction, num_results: int, *, recherche: str):
     try:
         num_results = int(num_results)
     except:
@@ -164,7 +164,7 @@ async def research(ctx: discord.Interaction, num_results: int, *, args: str):
         return
     
     liste = "\n"
-    liens = search(args, num_results=num_results, lang="fr", timeout=2)
+    liens = search(recherche, num_results=num_results, lang="fr", timeout=2)
     liens = list(liens)
     while len(liens) > num_results:
         liens.pop(-1)
