@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from discord.ext import commands
 from googlesearch import search
+from cript_table import CriptTable
 import discord, os, random, json
 
 
@@ -57,6 +58,11 @@ class MatBot(commands.Bot):
         self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
         with open('data.json', "r", encoding="utf-8") as file:
             self.data = json.load(file)
+        self.cript_tables = {}
+        with open('keys_data.json', "r", encoding="utf-8") as file:
+            users_keys: dict[int, str] = json.load(file)
+        for user in users_keys.keys():
+            self.cript_tables[user] = CriptTable(users_keys[user])
     
     def is_owner(self):
         async def predicate(ctx: discord.Interaction):
@@ -103,6 +109,29 @@ class MatBot(commands.Bot):
 
 bot = MatBot()
 
+
+@bot.slash_command(name="key", description="Set your key for the cripted translate")
+async def key(ctx: discord.Interaction, key: str):
+    new_table = CriptTable(key)
+    bot.cript_tables[str(ctx.user.id)] = new_table
+    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f'Your key has been is set to : ||{key}||', color=discord.Color.brand_green()))
+
+@bot.slash_command(name="my_key", description="View your key")
+async def my_key(ctx: discord.Interaction):
+    if str(ctx.user.id) not in bot.cript_tables:
+        await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title="You haven't a key", description="You can set one with `/key [key]`", color=discord.Color.brand_green()))
+        return
+    key = bot.cript_tables[str(ctx.user.id)].seed
+    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f"Your key : ||{key}||", color=discord.Color.brand_green()))
+
+@bot.slash_command(name="translate", description="Translate a text with the user's key")
+async def translate(ctx: discord.Interaction, *, text: str):
+    if str(ctx.user.id) not in bot.cript_tables:
+        await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title="You haven't a key", description="Please set one with `/key [key]`", color=discord.Color.brand_green()))
+        return
+    table: CriptTable = bot.cript_tables[str(ctx.user.id)]
+    translated_text = table.translate(text)
+    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title='Translated text :', description=translated_text, color=discord.Color.brand_green()))
 
 @bot.slash_command(name="repond", description="Répète ce que tu veux")
 async def repond(ctx: discord.Interaction, *, arg: str):    
@@ -213,5 +242,11 @@ async def unban(ctx: discord.Interaction, user: discord.Member):
         await ctx.response.send_message(f"Le membre {user} n'est pas banni.", ephemeral=True)
 
 
-
-bot.run(os.environ.get("TOKEN"))
+try:
+    bot.run(os.environ.get("TOKEN"))
+finally:
+    user_keys = {}
+    for user in bot.cript_tables.keys():
+        user_keys[user] = bot.cript_tables[user].seed
+    with open('keys_data.json', "w", encoding="utf-8") as file:
+        json.dump(user_keys, file)
