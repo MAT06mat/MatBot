@@ -1,1 +1,4 @@
-pycord
+python-dotenv
+discord.py
+py-cord
+googlesearch-python
