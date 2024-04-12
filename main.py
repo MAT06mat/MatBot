@@ -22,8 +22,9 @@ class NombreMistere:
             self.nb = random.randint(1, 100)
             self.essais = 0
             await reaction.message.channel.send("J'ai choisi un nombre entre 1 et 100.\nProposez des nombres pour essayer de le trouver !")
+            return False
         elif reaction.__str__() == "❌":
-            await reaction.message.channel.send("Partie Annulé")
+            await reaction.message.channel.send("Partie annulée")
             return True
     
     async def message(self, message):
