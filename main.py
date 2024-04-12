@@ -95,7 +95,7 @@ class MatBot(commands.Bot):
                         self.jeu.remove(j)
                     return await super().on_message(message)
             match message.content.lower().split(' ')[0]:
-                case 'bonjour' | 'salut' | 'hey' | 'slt' | 'bjr' | "cc" | "coucou" | "bonsoir" | "bonchoir" | "bienvenue":
+                case 'bonjour' | 'salut' | 'hey' | 'slt' | 'bjr' | "cc" | "coucou" | "bonsoir" | "bonchoir":
                     await message.channel.send(random.choice(self.rep["Bonjour"]))
         return await super().on_message(message)
 
