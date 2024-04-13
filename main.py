@@ -97,7 +97,7 @@ class MatBot(commands.Bot):
             for option in interaction.data["options"]:
                 command += f" {option['name']}:{option['value']}"
 
-        print(f"{interaction.guild.name} - {interaction.channel.name} : {interaction.user.display_name} -> {command}")
+        print(f"{interaction.guild.name} -> {interaction.channel.name} -> {interaction.user.display_name}: {command}")
         
         self.logs.append({"guild": interaction.guild.id, "channel": interaction.channel.id, "user": interaction.user.id, "command": command})
         
