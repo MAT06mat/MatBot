@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from discord.ext import commands
 from googlesearch import search
+from requests.exceptions import HTTPError
 
 from cript_table import CriptTable
 from response import response, defer
@@ -8,6 +9,7 @@ from response import response, defer
 import discord, os, random, json
 
 
+MAX_LOGS = 500
 load_dotenv('.env')
 
 
@@ -65,7 +67,9 @@ class MatBot(commands.Bot):
             self.data = json.load(file)
         self.cript_tables = {}
         with open('keys_data.json', "r", encoding="utf-8") as file:
-            users_keys: dict[int, str] = json.load(file)
+            users_keys: dict[str, str] = json.load(file)
+        with open('logs.json', "r", encoding="utf-8") as file:
+            self.logs: list = json.load(file)
         for user in users_keys.keys():
             self.cript_tables[self.cript.translate(user)] = CriptTable(self.cript.translate(users_keys[user]))
     
@@ -86,8 +90,13 @@ class MatBot(commands.Bot):
         if "options" in interaction.data:
             for option in interaction.data["options"]:
                 command += f" {option['name']}:{option['value']}"
+        log = f"{interaction.guild.name} - {interaction.channel.name} : {interaction.user.display_name} -> {command}"
         
-        print(f"{interaction.guild.name} - {interaction.channel.name} : {interaction.user.display_name} -> {command}")
+        print(log)
+        
+        self.logs.append(log)
+        if len(self.logs) > MAX_LOGS:
+            self.logs.pop(-1)
         return super().on_interaction(interaction)
     
     async def on_message(self, message: discord.Message):
@@ -125,8 +134,8 @@ async def set_key(ctx: discord.ApplicationContext, key: str):
     bot.cript_tables[str(ctx.user.id)] = new_table
     await response(ctx, title=f'Your key has been is set to : ||{key}||', embed=True, ephemeral=True)
 
-@bot.slash_command(name="my_key", description="View your key")
-async def my_key(ctx: discord.ApplicationContext):
+@bot.slash_command(name="view_key", description="View your key")
+async def view_key(ctx: discord.ApplicationContext):
     if str(ctx.user.id) not in bot.cript_tables:
         await response(ctx, title="You haven'y a key", content="You can set one with `/set_key [key]`", embed=True, ephemeral=True)
         return
@@ -163,29 +172,27 @@ async def jouer(ctx: discord.ApplicationContext):
     bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=msg.id, channel=ctx.channel))
 
 @bot.slash_command(name="research", description="Fait une recherche google")
-async def research(ctx: discord.ApplicationContext, num_results: int, *, recherche: str):
-    await defer(ctx)
+async def research(ctx: discord.ApplicationContext, number_of_results: int, *, recherche: str):
+    if number_of_results > 20:
+        await response(ctx, f"Le maximum de résultats est 20...", ephemeral=True)
+        return
+    
+    await defer(ctx, ephemeral=True)
     
     liste = "\n"
-    liens = search(recherche, num_results=num_results, lang="fr", timeout=2)
-    liens = list(liens)
+    try:
+        liens = list(search(recherche, num_results=number_of_results, lang="fr", timeout=5))
+    except HTTPError:
+        await response(ctx, "Une erreur est survenue, veuillez réessayer plus tard...")
+        return
     
-    while len(liens) > num_results:
+    while len(liens) > number_of_results:
         liens.pop(-1)
     
     for lien in liens:
         liste += f"- {lien}\n"
     
     await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour {recherche} :", content=liste)
-
-@bot.slash_command(name="clear", description="Efface des messages")
-@bot.is_owner()
-async def clear(ctx: discord.ApplicationContext, nb: int):
-    await defer(ctx, ephemeral=True)
-    messages = ctx.history(limit=nb)
-    async for message in messages:
-        await message.delete()
-    await response(ctx, f"{nb} message(s) ont bien été supprimés", ephemeral=True)
 
 @bot.slash_command(name="alea", description="Créé une phrase aléatoire")
 async def alea(ctx: discord.ApplicationContext):
@@ -207,12 +214,12 @@ async def add_gn(ctx: discord.ApplicationContext, *, gn: str):
     await response(ctx, f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
 
 @bot.slash_command(name="emoji", description="Ajoute des émojis aléatoires sous le dernier message")
-async def emoji(ctx: discord.ApplicationContext, nb: int = 1):
+async def emoji(ctx: discord.ApplicationContext, number: int = 1):
     await defer(ctx, ephemeral=True)
     reaction = bot.data["Reactions"]
     async for message in ctx.channel.history(limit=1):
         x = 0
-        for i in range(int(nb)):
+        for i in range(int(number)):
             try:
                 emoji = random.choice(reaction)["emoji"]
                 await message.add_reaction(emoji)
@@ -222,11 +229,20 @@ async def emoji(ctx: discord.ApplicationContext, nb: int = 1):
         await response(ctx, f"Ajout de {x} émoji(s) sur le message de {message.author.display_name}")
 
 @bot.slash_command(name="add_emoji", description="Ajoute un émoji sous le dernier message")
-async def add_emoji(ctx: discord.ApplicationContext, emoji):
+async def add_emoji(ctx: discord.ApplicationContext, emoji: discord.Emoji):
     await defer(ctx, ephemeral=True)
     async for message in ctx.channel.history(limit=1):
         await message.add_reaction(emoji)
         await response(ctx, f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
+
+@bot.slash_command(name="clear", description="Efface des messages")
+@bot.is_owner()
+async def clear(ctx: discord.ApplicationContext, number: int):
+    await defer(ctx, ephemeral=True)
+    messages = ctx.history(limit=number)
+    async for message in messages:
+        await message.delete()
+    await response(ctx, f"{number} message(s) ont bien été supprimés", ephemeral=True)
 
 @bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
 @bot.is_owner()
@@ -246,7 +262,25 @@ async def unban(ctx: discord.ApplicationContext, user: discord.Member):
     else:
         await response(ctx, title=f"Le membre {user.display_name} n'est pas banni.", embed=True, ephemeral=True)
 
-@bot.slash_command(name="help", description="View the list of commands")
+@bot.slash_command(name="logs", description="Voir l'historique des commandes")
+@bot.is_owner()
+async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
+    if numbers > 500:
+        await response(ctx, f"Le maximum de nombre de commandes est 500...", ephemeral=True)
+        return
+    defer(ctx)
+    
+    logs = ""
+    for i in range(numbers):
+        if len(bot.logs) > i:
+            logs += f"> {bot.logs[i]}\n"
+    
+    if logs == "":
+        logs = "Nothing..."
+    
+    await response(ctx, embed=True, title=f"Historique des {numbers} dernières commandes :", content=logs)
+
+@bot.slash_command(name="help", description="Regarder la liste des commandes")
 async def help(ctx: discord.ApplicationContext):
     title = "Liste des commandes :"
     command_list = ""
@@ -270,3 +304,5 @@ finally:
         user_keys[bot.cript.translate(user)] = bot.cript.translate(bot.cript_tables[user].seed)
     with open('keys_data.json', "w", encoding="utf-8") as file:
         json.dump(user_keys, file)
+    with open('logs.json', "w", encoding="utf-8") as file:
+        json.dump(bot.logs, file)

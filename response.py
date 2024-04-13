@@ -1,6 +1,5 @@
 import discord
 
-MISSING = discord.utils.MISSING
 
 async def response(
     ctx: discord.ApplicationContext, 
