@@ -49,7 +49,7 @@ class NombreMistere:
 
 class MatBot(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="!", intents=discord.Intents.all(), description="Voici la liste de mes commandes :")
+        super().__init__(command_prefix="/", intents=discord.Intents.all(), description="Voici la liste de mes commandes :")
         self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello", "Comment tu vas ?", "Bonjour à tous !"]}
         self.jeu = []
         self.admin = [861240797659136012]
@@ -125,6 +125,15 @@ async def my_key(ctx: discord.Interaction):
         return
     key = bot.cript_tables[str(ctx.user.id)].seed
     await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f"Your key : ||{key}||", color=discord.Color.brand_green()))
+
+@bot.slash_command(name="del_key", description="Delete your key")
+async def del_key(ctx: discord.Interaction):
+    if str(ctx.user.id) not in bot.cript_tables:
+        await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title="You haven't a key, nothing to delete...", color=discord.Color.brand_green()))
+        return
+    key = bot.cript_tables[str(ctx.user.id)].seed
+    bot.cript_tables.pop(str(ctx.user.id))
+    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f"Your key ||{key}|| has been delete", color=discord.Color.brand_green()))
 
 @bot.slash_command(name="translate", description="Translate a text with the user's key")
 async def translate(ctx: discord.Interaction, *, text: str):
@@ -242,6 +251,22 @@ async def unban(ctx: discord.Interaction, user: discord.Member):
         await ctx.response.send_message(f"Le membre {user} à été débanni !")
     else:
         await ctx.response.send_message(f"Le membre {user} n'est pas banni.", ephemeral=True)
+
+
+@bot.slash_command(name="help", description="View the list of commands")
+async def help(ctx: discord.Interaction):
+    title = "Liste des commandes :"
+    command_list = ""
+    
+    for command in bot.all_commands.items():
+        if not isinstance(command[1], discord.commands.SlashCommand):
+            continue
+        
+        command: discord.commands.SlashCommand = command[1]
+        
+        command_list += f"\n> **/{command.name}:** {command.description}"
+    
+    await ctx.response.send_message(embed=discord.Embed(title=title, description=command_list, color=discord.Color.brand_green()))
 
 
 try:
