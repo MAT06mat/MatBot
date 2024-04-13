@@ -10,6 +10,8 @@ import discord, os, random, json
 
 
 MAX_LOGS = 500
+
+
 load_dotenv('.env')
 
 
