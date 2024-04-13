@@ -280,9 +280,6 @@ async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
             nb_log += 1
             logs += f"> {bot.get_channel(log['channel']).name} -> {bot.get_user(log['user']).display_name}: **{log['command']}**\n"
     
-    if logs == "":
-        logs = "Nothing..."
-    
     await response(ctx, embed=True, title=f"Historique des {numbers} dernières commandes :", content=logs)
 
 @bot.slash_command(name="help", description="Regarder la liste des commandes")
