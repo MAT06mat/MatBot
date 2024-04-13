@@ -75,9 +75,9 @@ class MatBot(commands.Bot):
         for user in users_keys.keys():
             self.cript_tables[self.cript.translate(user)] = CriptTable(self.cript.translate(users_keys[user]))
     
-    def is_owner(self):
+    def have_permissions(self):
         async def predicate(ctx: discord.ApplicationContext):
-            if ctx.user.id in self.admin:
+            if ctx.user.guild_permissions.administrator or ctx.user.id in self.admin:
                 return True
             else:
                 await ctx.channel.send("Vous n'avez pas assez de droits pour executer cette commande !")
@@ -243,7 +243,7 @@ async def add_emoji(ctx: discord.ApplicationContext, emoji: discord.Emoji):
         await response(ctx, f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
 
 @bot.slash_command(name="clear", description="Efface des messages")
-@bot.is_owner()
+@bot.have_permissions()
 async def clear(ctx: discord.ApplicationContext, number: int):
     await defer(ctx, ephemeral=True)
     messages = ctx.history(limit=number)
@@ -252,7 +252,7 @@ async def clear(ctx: discord.ApplicationContext, number: int):
     await response(ctx, f"{number} message(s) ont bien été supprimés", ephemeral=True)
 
 @bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
-@bot.is_owner()
+@bot.have_permissions()
 async def ban(ctx: discord.ApplicationContext, user: discord.Member):
     if user.id in bot.ban:
         await response(ctx, title=f"Le membre {user.display_name} est déjà banni.", embed=True, ephemeral=True)
@@ -261,7 +261,7 @@ async def ban(ctx: discord.ApplicationContext, user: discord.Member):
         await response(ctx, title=f"Le membre {user.display_name} à été banni !", embed=True)
 
 @bot.slash_command(name="unban", description="Fait en sorte qu'un utilisateur ne sois plus banni")
-@bot.is_owner()
+@bot.have_permissions()
 async def unban(ctx: discord.ApplicationContext, user: discord.Member):
     if user.id in bot.ban:
         bot.ban.remove(user.id)
@@ -270,7 +270,7 @@ async def unban(ctx: discord.ApplicationContext, user: discord.Member):
         await response(ctx, title=f"Le membre {user.display_name} n'est pas banni.", embed=True, ephemeral=True)
 
 @bot.slash_command(name="logs", description="Voir l'historique des commandes")
-@bot.is_owner()
+@bot.have_permissions()
 async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     if numbers > 500:
         await response(ctx, f"Le maximum de nombre de commandes est 500...", ephemeral=True)
