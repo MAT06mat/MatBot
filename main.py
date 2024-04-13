@@ -282,7 +282,7 @@ async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     
     await response(ctx, embed=True, title=f"Historique des {numbers} dernières commandes :", content=logs)
 
-@bot.slash_command(name="help", description="Regarder la liste des commandes")
+@bot.slash_command(name="help", description="Affiche la liste des commandes")
 async def help(ctx: discord.ApplicationContext):
     title = "Liste des commandes :"
     command_list = ""
