@@ -82,7 +82,6 @@ class MatBot(commands.Bot):
         print(f"{self.user.display_name} est connecté au serveur.")
     
     def on_interaction(self, interaction: discord.interactions.Interaction):
-        
         command = f"/{interaction.data['name']}"
         if "options" in interaction.data:
             for option in interaction.data["options"]:
