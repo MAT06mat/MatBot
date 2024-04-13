@@ -87,6 +87,10 @@ class MatBot(commands.Bot):
     
     def on_interaction(self, interaction: discord.interactions.Interaction):
         command = f"/{interaction.data['name']}"
+        
+        if command in ("/set_key", "/del_key", "/view_key"):
+            return super().on_interaction(interaction)
+        
         if "options" in interaction.data:
             for option in interaction.data["options"]:
                 command += f" {option['name']}:{option['value']}"
