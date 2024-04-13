@@ -90,13 +90,14 @@ class MatBot(commands.Bot):
         if "options" in interaction.data:
             for option in interaction.data["options"]:
                 command += f" {option['name']}:{option['value']}"
-        log = f"{interaction.guild.name} - {interaction.channel.name} : {interaction.user.display_name} -> {command}"
+
+        print(f"{interaction.guild.name} - {interaction.channel.name} : {interaction.user.display_name} -> {command}")
         
-        print(log)
+        self.logs.append({"guild": interaction.guild.id, "channel": interaction.channel.id, "user": interaction.user.id, "command": command})
         
-        self.logs.append(log)
         if len(self.logs) > MAX_LOGS:
             self.logs.pop(-1)
+        
         return super().on_interaction(interaction)
     
     async def on_message(self, message: discord.Message):
@@ -268,12 +269,16 @@ async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     if numbers > 500:
         await response(ctx, f"Le maximum de nombre de commandes est 500...", ephemeral=True)
         return
-    defer(ctx)
+    await defer(ctx)
     
     logs = ""
-    for i in range(numbers):
-        if len(bot.logs) > i:
-            logs += f"> {bot.logs[i]}\n"
+    nb_log = 0
+    for log in bot.logs:
+        if nb_log >= numbers:
+            continue
+        if log["guild"] == ctx.guild_id:
+            nb_log += 1
+            logs += f"> {bot.get_channel(log['channel']).name} -> {bot.get_user(log['user']).display_name}: **{log['command']}**\n"
     
     if logs == "":
         logs = "Nothing..."
