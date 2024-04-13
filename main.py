@@ -1,7 +1,10 @@
 from dotenv import load_dotenv
 from discord.ext import commands
 from googlesearch import search
+
 from cript_table import CriptTable
+from response import response, defer
+
 import discord, os, random, json
 
 
@@ -67,7 +70,7 @@ class MatBot(commands.Bot):
             self.cript_tables[self.cript.translate(user)] = CriptTable(self.cript.translate(users_keys[user]))
     
     def is_owner(self):
-        async def predicate(ctx: discord.Interaction):
+        async def predicate(ctx: discord.ApplicationContext):
             if ctx.user.id in self.admin:
                 return True
             else:
@@ -113,148 +116,134 @@ bot = MatBot()
 
 
 @bot.slash_command(name="set_key", description="Set your key for the cripted translate")
-async def set_key(ctx: discord.Interaction, key: str):
+async def set_key(ctx: discord.ApplicationContext, key: str):
     new_table = CriptTable(key)
     bot.cript_tables[str(ctx.user.id)] = new_table
-    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f'Your key has been is set to : ||{key}||', color=discord.Color.brand_green()))
+    await response(ctx, title=f'Your key has been is set to : ||{key}||', embed=True, ephemeral=True)
 
 @bot.slash_command(name="my_key", description="View your key")
-async def my_key(ctx: discord.Interaction):
+async def my_key(ctx: discord.ApplicationContext):
     if str(ctx.user.id) not in bot.cript_tables:
-        await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title="You haven't a key", description="You can set one with `/set_key [key]`", color=discord.Color.brand_green()))
+        await response(ctx, title="You haven'y a key", content="You can set one with `/set_key [key]`", embed=True, ephemeral=True)
         return
     key = bot.cript_tables[str(ctx.user.id)].seed
-    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f"Your key : ||{key}||", color=discord.Color.brand_green()))
+    await response(ctx, ephemeral=True, embed=True, title=f"Your key : ||{key}||")
 
 @bot.slash_command(name="del_key", description="Delete your key")
-async def del_key(ctx: discord.Interaction):
+async def del_key(ctx: discord.ApplicationContext):
     if str(ctx.user.id) not in bot.cript_tables:
-        await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title="You haven't a key, nothing to delete...", color=discord.Color.brand_green()))
+        await response(ctx, title="You haven'y a key, nothing to delete...", embed=True, ephemeral=True)
         return
     key = bot.cript_tables[str(ctx.user.id)].seed
     bot.cript_tables.pop(str(ctx.user.id))
-    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title=f"Your key ||{key}|| has been delete", color=discord.Color.brand_green()))
+    await response(ctx, ephemeral=True, embed=True, title=f"Your key ||{key}|| has been delete")
 
 @bot.slash_command(name="translate", description="Translate a text with the user's key")
-async def translate(ctx: discord.Interaction, *, text: str):
+async def translate(ctx: discord.ApplicationContext, *, text: str):
     if str(ctx.user.id) not in bot.cript_tables:
-        await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title="You haven't a key", description="Please set one with `/set_key [key]`", color=discord.Color.brand_green()))
+        await response(ctx, title="You haven'y a key", content="You can set one with `/set_key [key]`", embed=True, ephemeral=True)
         return
     table: CriptTable = bot.cript_tables[str(ctx.user.id)]
     translated_text = table.translate(text)
-    await ctx.response.send_message(ephemeral=True, embed=discord.Embed(title='Translated text :', description=translated_text, color=discord.Color.brand_green()))
+    await response(ctx, ephemeral=True, embed=True, title='Translated text :', content=translated_text)
 
 @bot.slash_command(name="repond", description="Répète ce que tu veux")
-async def repond(ctx: discord.Interaction, *, text: str):    
-    await ctx.response.send_message(text)
+async def repond(ctx: discord.ApplicationContext, *, text: str):    
+    await response(ctx, text)
 
 @bot.slash_command(name="jouer", description="Joue au nombre mistère")
-async def jouer(ctx: discord.Interaction):
-    new_message = await ctx.response.send_message("Voulez vous jouer au nombre mistère ?")
-    await new_message.add_reaction("✅")
-    await new_message.add_reaction("❌")
-    bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=new_message.id, channel=ctx.channel))
-
-@bot.slash_command(name="sondage", description="Créé un sondage")
-async def sondage(ctx: discord.Interaction, *, question: str):
-    if ctx.message:
-        await ctx.message.delete()
-    new_message = await ctx.response.send_message(f"**Nouveau Sondage de {ctx.user.name}:**\n{question}")
-    await new_message.add_reaction("✅")
-    await new_message.add_reaction("➖")
-    await new_message.add_reaction("❌")
+async def jouer(ctx: discord.ApplicationContext):
+    msg = await response(ctx, "Voulez vous jouer au nombre mistère ?")
+    await msg.add_reaction("✅")
+    await msg.add_reaction("❌")
+    bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=msg.id, channel=ctx.channel))
 
 @bot.slash_command(name="research", description="Fait une recherche google")
-async def research(ctx: discord.Interaction, num_results: int, *, recherche: str):
-    try:
-        num_results = int(num_results)
-    except:
-        await ctx.response.send_message(f"ERROR: {bot.command_prefix}research [nombre_de_résultats] [votre_recherche]", ephemeral=True)
-        return
+async def research(ctx: discord.ApplicationContext, num_results: int, *, recherche: str):
+    await defer(ctx)
     
     liste = "\n"
     liens = search(recherche, num_results=num_results, lang="fr", timeout=2)
     liens = list(liens)
+    
     while len(liens) > num_results:
         liens.pop(-1)
+    
     for lien in liens:
         liste += f"- {lien}\n"
-    await ctx.response.send_message(f"Voici ce que j'ai trouvé :{liste}")
+    
+    await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour {recherche} :", content=liste)
 
 @bot.slash_command(name="clear", description="Efface des messages")
 @bot.is_owner()
-async def clear(ctx: discord.Interaction, nb: int):
-    try:
-        nb = int(nb)
-        messages = ctx.history(limit=nb)
-        await ctx.response.defer(ephemeral=True, invisible=False)
-        async for message in messages:
-            await message.delete()
-    except:
-        await ctx.response.send_message(f"ERROR: {bot.command_prefix}clear [nombre_de_messages_à_effacer]", ephemeral=True)
+async def clear(ctx: discord.ApplicationContext, nb: int):
+    await defer(ctx, ephemeral=True)
+    messages = ctx.history(limit=nb)
+    async for message in messages:
+        await message.delete()
+    await response(ctx, f"{nb} message(s) ont bien été supprimés", ephemeral=True)
 
 @bot.slash_command(name="alea", description="Créé une phrase aléatoire")
-async def alea(ctx: discord.Interaction):
-    await ctx.response.send_message(f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
+async def alea(ctx: discord.ApplicationContext):
+    await response(ctx, f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
 
 @bot.slash_command(name="pronom", description="Ajoute un pronom pour la création de phrase aléatoire")
-async def add_pronom(ctx: discord.Interaction, *, pronom: str):
-    await ctx.response.send_message(f"Le pronom '{pronom}' à bien été ajouté !", ephemeral=True)
+async def add_pronom(ctx: discord.ApplicationContext, *, pronom: str):
     bot.pronom.append(pronom)
+    await response(ctx, f"Le pronom '{pronom}' à bien été ajouté !", ephemeral=True)
 
 @bot.slash_command(name="verbe", description="Ajoute un verbe pour la création de phrase aléatoire")
-async def add_verbe(ctx: discord.Interaction, *, verbe: str):
-    await ctx.response.send_message(f"Le verbe '{verbe}' à bien été ajouté !", ephemeral=True)
+async def add_verbe(ctx: discord.ApplicationContext, *, verbe: str):
     bot.verbe.append(verbe)
+    await response(ctx, f"Le verbe '{verbe}' à bien été ajouté !", ephemeral=True)
 
 @bot.slash_command(name="gn", description="Ajoute un groupe nominal pour la création de phrase aléatoire")
-async def add_gn(ctx: discord.Interaction, *, gn: str):
-    await ctx.response.send_message(f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
+async def add_gn(ctx: discord.ApplicationContext, *, gn: str):
     bot.gn.append(gn)
+    await response(ctx, f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
 
-@bot.slash_command(name="emoji", description="Ajoute des emojis aléatoires sous le dernier message")
-async def emoji(ctx: discord.Interaction, nb: int = 1):
+@bot.slash_command(name="emoji", description="Ajoute des émojis aléatoires sous le dernier message")
+async def emoji(ctx: discord.ApplicationContext, nb: int = 1):
+    await defer(ctx, ephemeral=True)
     reaction = bot.data["Reactions"]
-    ctx.response.send_message("Ok", ephemeral=True)
     async for message in ctx.channel.history(limit=1):
+        x = 0
         for i in range(int(nb)):
-            emoji = random.choice(reaction)["emoji"]
             try:
+                emoji = random.choice(reaction)["emoji"]
                 await message.add_reaction(emoji)
+                x += 1
             except:
-                try:
-                    emoji = random.choice(reaction)["emoji"]
-                    await message.add_reaction(emoji)
-                except:
-                    return
+                continue
+        await response(ctx, f"Ajout de {x} émoji(s) sur le message de {message.author.display_name}")
 
-@bot.slash_command(name="add_emoji", description="Ajoute des emojis aléatoires sous le dernier message")
-async def add_emoji(ctx: discord.Interaction, emoji):
+@bot.slash_command(name="add_emoji", description="Ajoute un émoji sous le dernier message")
+async def add_emoji(ctx: discord.ApplicationContext, emoji):
+    await defer(ctx, ephemeral=True)
     async for message in ctx.channel.history(limit=1):
         await message.add_reaction(emoji)
-        await ctx.response.send_message("Ok", ephemeral=True)
+        await response(ctx, f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
 
 @bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
 @bot.is_owner()
-async def ban(ctx: discord.Interaction, user: discord.Member):
+async def ban(ctx: discord.ApplicationContext, user: discord.Member):
     if user.id in bot.ban:
-        await ctx.response.send_message(f"Le membre {user} est déjà banni.", ephemeral=True)
+        await response(ctx, title=f"Le membre {user.display_name} est déjà banni.", embed=True, ephemeral=True)
     else:
         bot.ban.append(user.id)
-        await ctx.response.send_message(f"Le membre {user} à été banni !")
+        await response(ctx, title=f"Le membre {user.display_name} à été banni !", embed=True)
 
 @bot.slash_command(name="unban", description="Fait en sorte qu'un utilisateur ne sois plus banni")
 @bot.is_owner()
-async def unban(ctx: discord.Interaction, user: discord.Member):
+async def unban(ctx: discord.ApplicationContext, user: discord.Member):
     if user.id in bot.ban:
         bot.ban.remove(user.id)
-        await ctx.response.send_message(f"Le membre {user} à été débanni !")
+        await response(ctx, title=f"Le membre {user.display_name} à été débanni !", embed=True)
     else:
-        await ctx.response.send_message(f"Le membre {user} n'est pas banni.", ephemeral=True)
-
+        await response(ctx, title=f"Le membre {user.display_name} n'est pas banni.", embed=True, ephemeral=True)
 
 @bot.slash_command(name="help", description="View the list of commands")
-async def help(ctx: discord.Interaction):
+async def help(ctx: discord.ApplicationContext):
     title = "Liste des commandes :"
     command_list = ""
     
@@ -266,7 +255,7 @@ async def help(ctx: discord.Interaction):
         
         command_list += f"\n> **/{command.name}:** {command.description}"
     
-    await ctx.response.send_message(embed=discord.Embed(title=title, description=command_list, color=discord.Color.brand_green()))
+    await response(ctx, embed=True, title=title, content=command_list)
 
 
 try:
