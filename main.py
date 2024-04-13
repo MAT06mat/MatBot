@@ -57,14 +57,14 @@ class MatBot(commands.Bot):
         self.pronom = ["Je", "Tu", "Il"]
         self.verbe = ["mange", "fais", "roule", "regarde", "ajoute"]
         self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
-        self.cript = CriptTable(0)
+        self.cript = CriptTable(os.environ.get("TABLE_KEY"))
         with open('data.json', "r", encoding="utf-8") as file:
             self.data = json.load(file)
         self.cript_tables = {}
         with open('keys_data.json', "r", encoding="utf-8") as file:
             users_keys: dict[int, str] = json.load(file)
         for user in users_keys.keys():
-            self.cript_tables[user] = CriptTable(self.cript.translate(users_keys[user]))
+            self.cript_tables[self.cript.translate(user)] = CriptTable(self.cript.translate(users_keys[user]))
     
     def is_owner(self):
         async def predicate(ctx: discord.Interaction):
@@ -274,6 +274,6 @@ try:
 finally:
     user_keys = {}
     for user in bot.cript_tables.keys():
-        user_keys[user] = bot.cript.translate(bot.cript_tables[user].seed)
+        user_keys[bot.cript.translate(user)] = bot.cript.translate(bot.cript_tables[user].seed)
     with open('keys_data.json', "w", encoding="utf-8") as file:
         json.dump(user_keys, file)
