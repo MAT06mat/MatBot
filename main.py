@@ -81,13 +81,17 @@ class MatBot(commands.Bot):
     async def on_ready(self):
         print(f"{self.user.display_name} est connecté au serveur.")
     
-    async def on_message(self, message: discord.Message):
-        if message.channel.id != 1132312138980012135:
-            try:
-                print(f"{message.guild.name} - {message.channel.name} : {message.author.name} -> {message.content}")
-            except AttributeError:
-                return await super().on_message(message)
+    def on_interaction(self, interaction: discord.interactions.Interaction):
         
+        command = f"/{interaction.data['name']}"
+        if "options" in interaction.data:
+            for option in interaction.data["options"]:
+                command += f" {option['name']}:{option['value']}"
+        
+        print(f"{interaction.guild.name} - {interaction.channel.name} : {interaction.user.display_name} -> {command}")
+        return super().on_interaction(interaction)
+    
+    async def on_message(self, message: discord.Message):
         if message.author.id == 1069896287765401630:
             return await super().on_message(message)
         elif message.author.id in self.ban:
@@ -113,6 +117,7 @@ class MatBot(commands.Bot):
 
 
 bot = MatBot()
+
 
 
 @bot.slash_command(name="set_key", description="Set your key for the cripted translate")
