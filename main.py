@@ -187,12 +187,12 @@ async def translate(ctx: discord.ApplicationContext, *, text: str):
 
 @bot.slash_command(name="repond", description="Répète ce que tu veux")
 async def repond(ctx: discord.ApplicationContext, *, text: str):    
-    await response(ctx, text)
+    await response(ctx, title=text, embed=True)
 
 
 @bot.slash_command(name="jouer", description="Joue au nombre mistère")
 async def jouer(ctx: discord.ApplicationContext):
-    msg = await response(ctx, "Voulez vous jouer au nombre mistère ?")
+    msg = await response(ctx, title="Voulez vous jouer au nombre mistère ?", embed=True)
     await msg.add_reaction("✅")
     await msg.add_reaction("❌")
     bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=msg.id, channel=ctx.channel))
@@ -217,32 +217,32 @@ async def research(ctx: discord.ApplicationContext, number_of_results: int, *, r
         liens.pop(-1)
     
     for lien in liens:
-        liste += f"- {lien}\n"
+        liste += f"> - {lien}\n"
     
-    await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour {recherche} :", content=liste, ephemeral=False)
+    await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour '{recherche}' :", content=liste)
 
 
 @bot.slash_command(name="alea", description="Créé une phrase aléatoire")
 async def alea(ctx: discord.ApplicationContext):
-    await response(ctx, f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
+    await response(ctx, embed=True, title=f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
 
 
 @bot.slash_command(name="pronom", description="Ajoute un pronom pour la création de phrase aléatoire")
 async def add_pronom(ctx: discord.ApplicationContext, *, pronom: str):
     bot.pronom.append(pronom)
-    await response(ctx, f"Le pronom '{pronom}' à bien été ajouté !", ephemeral=True)
+    await response(ctx, title=f"Le pronom '{pronom}' à bien été ajouté !", embed=True, ephemeral=True)
 
 
 @bot.slash_command(name="verbe", description="Ajoute un verbe pour la création de phrase aléatoire")
 async def add_verbe(ctx: discord.ApplicationContext, *, verbe: str):
     bot.verbe.append(verbe)
-    await response(ctx, f"Le verbe '{verbe}' à bien été ajouté !", ephemeral=True)
+    await response(ctx, title=f"Le verbe '{verbe}' à bien été ajouté !", embed=True, ephemeral=True)
 
 
 @bot.slash_command(name="gn", description="Ajoute un groupe nominal pour la création de phrase aléatoire")
 async def add_gn(ctx: discord.ApplicationContext, *, gn: str):
     bot.gn.append(gn)
-    await response(ctx, f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
+    await response(ctx, title=f"Le gn '{gn}' à bien été ajouté !", embed=True, ephemeral=True)
 
 
 @bot.slash_command(name="random_emoji", description="Ajoute des émojis aléatoires sous le dernier message")
@@ -261,7 +261,7 @@ async def random_emoji(ctx: discord.ApplicationContext, number: int = 1):
                 x += 1
             except:
                 continue
-        await response(ctx, f"Ajout de {x} émoji(s) sur le message de {message.author.display_name}")
+        await response(ctx, embed=True, title=f"Ajout de {x} émoji(s) sur le message de {message.author.display_name}")
 
 
 @bot.slash_command(name="add_emoji", description="Ajoute un émoji sous le dernier message")
@@ -272,9 +272,9 @@ async def add_emoji(ctx: discord.ApplicationContext, emoji):
         try:
             await message.add_reaction(emoji)
         except:    
-            await response(ctx, f"L'émoji {emoji} n'existe pas...")
+            await response(ctx, embed=True, title=f"L'émoji {emoji} n'existe pas...")
             return
-        await response(ctx, f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
+        await response(ctx, embed=True, title=f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
 
 
 @bot.slash_command(name="clear", description="Efface des messages")
@@ -288,7 +288,7 @@ async def clear(ctx: discord.ApplicationContext, number: int):
         async for message in messages:
             await message.delete()
     
-    await response(ctx, f"{number} message(s) ont bien été supprimés", ephemeral=True)
+    await response(ctx, title=f"{number} message(s) ont bien été supprimés", embed=True, ephemeral=True)
 
 
 @bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
@@ -315,7 +315,7 @@ async def unban(ctx: discord.ApplicationContext, user: discord.Member):
 @bot.have_permissions(PERMISSIONS.view_audit_log)
 async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     if numbers > 500:
-        await response(ctx, f"Le maximum de nombre de commandes est 500...", ephemeral=True)
+        await response(ctx, f"Le maximum de commandes est 500...", ephemeral=True)
         return
     await defer(ctx)
     
