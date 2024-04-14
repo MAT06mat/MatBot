@@ -254,9 +254,13 @@ async def add_emoji(ctx: discord.ApplicationContext, emoji):
 @bot.have_permissions()
 async def clear(ctx: discord.ApplicationContext, number: int):
     await defer(ctx, ephemeral=True)
-    messages = ctx.history(limit=number)
-    async for message in messages:
-        await message.delete()
+    
+    nb_msg_clear = len(await ctx.channel.purge(limit=number))
+    if nb_msg_clear != number:
+        messages = ctx.history(limit=number-nb_msg_clear)
+        async for message in messages:
+            await message.delete()
+    
     await response(ctx, f"{number} message(s) ont bien été supprimés", ephemeral=True)
 
 @bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
