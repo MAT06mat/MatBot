@@ -315,18 +315,18 @@ async def unban(ctx: discord.ApplicationContext, user: discord.Member):
 @bot.have_permissions(PERMISSIONS.view_audit_log)
 async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     if numbers > 500:
-        await response(ctx, f"Le maximum de commandes est 500...", ephemeral=True)
+        await response(ctx, f"Le nombre maximum de commandes est 500...", ephemeral=True)
         return
     await defer(ctx)
     
     logs = ""
     nb_log = 0
-    for log in bot.logs:
+    for log in bot.logs[::-1]:
         if nb_log >= numbers:
             continue
         if log["guild"] == ctx.guild_id:
             nb_log += 1
-            logs += f"> {bot.get_channel(log['channel']).name} -> {bot.get_user(log['user']).display_name}: **{log['command']}**\n"
+            logs = f"> {bot.get_channel(log['channel']).name} -> {bot.get_user(log['user']).display_name}: **{log['command']}**\n" + logs
     
     await response(ctx, embed=True, title=f"Historique des {numbers} dernières commandes :", content=logs)
 
