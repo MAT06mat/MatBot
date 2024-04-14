@@ -222,8 +222,8 @@ async def add_gn(ctx: discord.ApplicationContext, *, gn: str):
     bot.gn.append(gn)
     await response(ctx, f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
 
-@bot.slash_command(name="emoji", description="Ajoute des émojis aléatoires sous le dernier message")
-async def emoji(ctx: discord.ApplicationContext, number: int = 1):
+@bot.slash_command(name="random_emoji", description="Ajoute des émojis aléatoires sous le dernier message")
+async def random_emoji(ctx: discord.ApplicationContext, number: int = 1):
     await defer(ctx, ephemeral=True)
     reaction = bot.data["Reactions"]
     async for message in ctx.channel.history(limit=1):
