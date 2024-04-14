@@ -1,2 +1,4 @@
 .env
 __pycache__*
+keys_data.json
+logs.json
