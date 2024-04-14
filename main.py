@@ -5,12 +5,12 @@ from googlesearch import search
 from requests.exceptions import HTTPError
 
 from cript_table import CriptTable
-import discord.ext
 from response import response, defer
 
 import discord, os, random, json
 
 
+PERMISSIONS = discord.permissions.Permissions
 MAX_LOGS = 500
 
 
@@ -67,6 +67,9 @@ class MatBot(commands.Bot):
         self.verbe = ["mange", "fais", "roule", "regarde", "ajoute"]
         self.gn = ["de la nourriture", "du caca", "sur la route", "la télé", "des chiffres"]
         self.cript = CriptTable(os.environ.get("TABLE_KEY"))
+        self.load_data()
+    
+    def load_data(self):
         with open('data.json', "r", encoding="utf-8") as file:
             self.data = json.load(file)
         self.cript_tables = {}
@@ -76,14 +79,23 @@ class MatBot(commands.Bot):
             self.logs: list = json.load(file)
         for user in users_keys.keys():
             self.cript_tables[self.cript.translate(user)] = CriptTable(self.cript.translate(users_keys[user]))
+
+    def save_data(self):
+        user_keys = {}
+        for user in self.cript_tables.keys():
+            user_keys[self.cript.translate(user)] = self.cript.translate(self.cript_tables[user].seed)
+        with open('keys_data.json', "w", encoding="utf-8") as file:
+            json.dump(user_keys, file)
+        with open('logs.json', "w", encoding="utf-8") as file:
+            json.dump(self.logs, file)
     
-    def have_permissions(self):
+    def have_permissions(self, *perms: discord.flags.flag_value):
         async def predicate(ctx: discord.ApplicationContext):
-            if ctx.user.guild_permissions.administrator or ctx.user.id in self.admin:
-                return True
-            else:
-                await ctx.channel.send("Vous n'avez pas assez de droits pour executer cette commande !")
-                return False
+            for perm in perms:
+                if not (ctx.user.guild_permissions._has_flag(perm.flag) or ctx.user.id in self.admin):
+                    await ctx.channel.send("Vous n'avez pas assez de droits pour executer cette commande !")
+                    return False
+            return True
         return commands.check(predicate)
     
     async def on_ready(self):
@@ -143,6 +155,7 @@ async def set_key(ctx: discord.ApplicationContext, key: str):
     bot.cript_tables[str(ctx.user.id)] = new_table
     await response(ctx, title=f'Your key has been is set to : ||{key}||', embed=True, ephemeral=True)
 
+
 @bot.slash_command(name="view_key", description="View your key")
 async def view_key(ctx: discord.ApplicationContext):
     if str(ctx.user.id) not in bot.cript_tables:
@@ -150,6 +163,7 @@ async def view_key(ctx: discord.ApplicationContext):
         return
     key = bot.cript_tables[str(ctx.user.id)].seed
     await response(ctx, ephemeral=True, embed=True, title=f"Your key : ||{key}||")
+
 
 @bot.slash_command(name="del_key", description="Delete your key")
 async def del_key(ctx: discord.ApplicationContext):
@@ -160,6 +174,7 @@ async def del_key(ctx: discord.ApplicationContext):
     bot.cript_tables.pop(str(ctx.user.id))
     await response(ctx, ephemeral=True, embed=True, title=f"Your key ||{key}|| has been delete")
 
+
 @bot.slash_command(name="translate", description="Translate a text with the user's key")
 async def translate(ctx: discord.ApplicationContext, *, text: str):
     if str(ctx.user.id) not in bot.cript_tables:
@@ -169,9 +184,11 @@ async def translate(ctx: discord.ApplicationContext, *, text: str):
     translated_text = table.translate(text)
     await response(ctx, ephemeral=True, embed=True, title='Translated text :', content=translated_text)
 
+
 @bot.slash_command(name="repond", description="Répète ce que tu veux")
 async def repond(ctx: discord.ApplicationContext, *, text: str):    
     await response(ctx, text)
+
 
 @bot.slash_command(name="jouer", description="Joue au nombre mistère")
 async def jouer(ctx: discord.ApplicationContext):
@@ -179,6 +196,7 @@ async def jouer(ctx: discord.ApplicationContext):
     await msg.add_reaction("✅")
     await msg.add_reaction("❌")
     bot.jeu.append(NombreMistere(id_user=ctx.user.id, id_message=msg.id, channel=ctx.channel))
+
 
 @bot.slash_command(name="research", description="Fait une recherche google")
 async def research(ctx: discord.ApplicationContext, number_of_results: int, *, recherche: str):
@@ -203,26 +221,32 @@ async def research(ctx: discord.ApplicationContext, number_of_results: int, *, r
     
     await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour {recherche} :", content=liste, ephemeral=False)
 
+
 @bot.slash_command(name="alea", description="Créé une phrase aléatoire")
 async def alea(ctx: discord.ApplicationContext):
     await response(ctx, f"{random.choice(bot.pronom)} {random.choice(bot.verbe)} {random.choice(bot.gn)}.")
+
 
 @bot.slash_command(name="pronom", description="Ajoute un pronom pour la création de phrase aléatoire")
 async def add_pronom(ctx: discord.ApplicationContext, *, pronom: str):
     bot.pronom.append(pronom)
     await response(ctx, f"Le pronom '{pronom}' à bien été ajouté !", ephemeral=True)
 
+
 @bot.slash_command(name="verbe", description="Ajoute un verbe pour la création de phrase aléatoire")
 async def add_verbe(ctx: discord.ApplicationContext, *, verbe: str):
     bot.verbe.append(verbe)
     await response(ctx, f"Le verbe '{verbe}' à bien été ajouté !", ephemeral=True)
+
 
 @bot.slash_command(name="gn", description="Ajoute un groupe nominal pour la création de phrase aléatoire")
 async def add_gn(ctx: discord.ApplicationContext, *, gn: str):
     bot.gn.append(gn)
     await response(ctx, f"Le gn '{gn}' à bien été ajouté !", ephemeral=True)
 
+
 @bot.slash_command(name="random_emoji", description="Ajoute des émojis aléatoires sous le dernier message")
+@bot.have_permissions(PERMISSIONS.add_reactions, PERMISSIONS.manage_emojis)
 async def random_emoji(ctx: discord.ApplicationContext, number: int = 1):
     await defer(ctx, ephemeral=True)
     reaction = bot.data["Reactions"]
@@ -239,7 +263,9 @@ async def random_emoji(ctx: discord.ApplicationContext, number: int = 1):
                 continue
         await response(ctx, f"Ajout de {x} émoji(s) sur le message de {message.author.display_name}")
 
+
 @bot.slash_command(name="add_emoji", description="Ajoute un émoji sous le dernier message")
+@bot.have_permissions(PERMISSIONS.add_reactions, PERMISSIONS.manage_emojis)
 async def add_emoji(ctx: discord.ApplicationContext, emoji):
     await defer(ctx, ephemeral=True)
     async for message in ctx.channel.history(limit=1):
@@ -250,8 +276,9 @@ async def add_emoji(ctx: discord.ApplicationContext, emoji):
             return
         await response(ctx, f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
 
+
 @bot.slash_command(name="clear", description="Efface des messages")
-@bot.have_permissions()
+@bot.have_permissions(PERMISSIONS.manage_messages)
 async def clear(ctx: discord.ApplicationContext, number: int):
     await defer(ctx, ephemeral=True)
     
@@ -263,8 +290,9 @@ async def clear(ctx: discord.ApplicationContext, number: int):
     
     await response(ctx, f"{number} message(s) ont bien été supprimés", ephemeral=True)
 
+
 @bot.slash_command(name="ban", description="Fait en sorte qu'un utilisateur ne puisse plus écrire")
-@bot.have_permissions()
+@bot.have_permissions(PERMISSIONS.mute_members)
 async def ban(ctx: discord.ApplicationContext, user: discord.Member):
     if user.id in bot.ban:
         await response(ctx, title=f"Le membre {user.display_name} est déjà banni.", embed=True, ephemeral=True)
@@ -272,8 +300,9 @@ async def ban(ctx: discord.ApplicationContext, user: discord.Member):
         bot.ban.append(user.id)
         await response(ctx, title=f"Le membre {user.display_name} à été banni !", embed=True)
 
+
 @bot.slash_command(name="unban", description="Fait en sorte qu'un utilisateur ne sois plus banni")
-@bot.have_permissions()
+@bot.have_permissions(PERMISSIONS.mute_members)
 async def unban(ctx: discord.ApplicationContext, user: discord.Member):
     if user.id in bot.ban:
         bot.ban.remove(user.id)
@@ -281,8 +310,9 @@ async def unban(ctx: discord.ApplicationContext, user: discord.Member):
     else:
         await response(ctx, title=f"Le membre {user.display_name} n'est pas banni.", embed=True, ephemeral=True)
 
+
 @bot.slash_command(name="logs", description="Voir l'historique des commandes")
-@bot.have_permissions()
+@bot.have_permissions(PERMISSIONS.view_audit_log)
 async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     if numbers > 500:
         await response(ctx, f"Le maximum de nombre de commandes est 500...", ephemeral=True)
@@ -300,6 +330,7 @@ async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
     
     await response(ctx, embed=True, title=f"Historique des {numbers} dernières commandes :", content=logs)
 
+
 @bot.slash_command(name="help", description="Affiche la liste des commandes")
 async def help(ctx: discord.ApplicationContext):
     title = "Liste des commandes :"
@@ -316,13 +347,9 @@ async def help(ctx: discord.ApplicationContext):
     await response(ctx, embed=True, title=title, content=command_list)
 
 
-try:
-    bot.run(os.environ.get("TOKEN"))
-finally:
-    user_keys = {}
-    for user in bot.cript_tables.keys():
-        user_keys[bot.cript.translate(user)] = bot.cript.translate(bot.cript_tables[user].seed)
-    with open('keys_data.json', "w", encoding="utf-8") as file:
-        json.dump(user_keys, file)
-    with open('logs.json', "w", encoding="utf-8") as file:
-        json.dump(bot.logs, file)
+
+if __name__ == '__main__':
+    try:
+        bot.run(os.environ.get("TOKEN"))
+    finally:
+        bot.save_data()
