@@ -1,9 +1,11 @@
+import discord.ext.commands
 from dotenv import load_dotenv
 from discord.ext import commands
 from googlesearch import search
 from requests.exceptions import HTTPError
 
 from cript_table import CriptTable
+import discord.ext
 from response import response, defer
 
 import discord, os, random, json
@@ -184,13 +186,13 @@ async def research(ctx: discord.ApplicationContext, number_of_results: int, *, r
         await response(ctx, f"Le maximum de résultats est 20...", ephemeral=True)
         return
     
-    await defer(ctx, ephemeral=True)
+    await defer(ctx)
     
     liste = "\n"
     try:
         liens = list(search(recherche, num_results=number_of_results, lang="fr", timeout=5))
     except HTTPError:
-        await response(ctx, "Une erreur est survenue, veuillez réessayer plus tard...")
+        await response(ctx, "Une erreur est survenue, veuillez réessayer plus tard...", ephemeral=True)
         return
     
     while len(liens) > number_of_results:
@@ -199,7 +201,7 @@ async def research(ctx: discord.ApplicationContext, number_of_results: int, *, r
     for lien in liens:
         liste += f"- {lien}\n"
     
-    await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour {recherche} :", content=liste)
+    await response(ctx, embed=True, title=f"Voici ce que j'ai trouvé pour {recherche} :", content=liste, ephemeral=False)
 
 @bot.slash_command(name="alea", description="Créé une phrase aléatoire")
 async def alea(ctx: discord.ApplicationContext):
@@ -227,6 +229,8 @@ async def emoji(ctx: discord.ApplicationContext, number: int = 1):
     async for message in ctx.channel.history(limit=1):
         x = 0
         for i in range(int(number)):
+            if len(message.reactions) >= 20:
+                continue
             try:
                 emoji = random.choice(reaction)["emoji"]
                 await message.add_reaction(emoji)
@@ -236,10 +240,14 @@ async def emoji(ctx: discord.ApplicationContext, number: int = 1):
         await response(ctx, f"Ajout de {x} émoji(s) sur le message de {message.author.display_name}")
 
 @bot.slash_command(name="add_emoji", description="Ajoute un émoji sous le dernier message")
-async def add_emoji(ctx: discord.ApplicationContext, emoji: discord.Emoji):
+async def add_emoji(ctx: discord.ApplicationContext, emoji):
     await defer(ctx, ephemeral=True)
     async for message in ctx.channel.history(limit=1):
-        await message.add_reaction(emoji)
+        try:
+            await message.add_reaction(emoji)
+        except:    
+            await response(ctx, f"L'émoji {emoji} n'existe pas...")
+            return
         await response(ctx, f"Ajout de l'émoji {emoji} sous le message de {message.author.display_name}", ephemeral=True)
 
 @bot.slash_command(name="clear", description="Efface des messages")
