@@ -26,7 +26,7 @@ class NombreMistere:
         self.essais = None
         self.messages = []
     
-    async def start(self, reaction: discord.Reaction):
+    async def start(self, reaction: discord.Reaction) -> bool:
         if reaction.__str__() == "✅":
             self.nb = random.randint(1, 100)
             self.essais = 0
@@ -36,7 +36,7 @@ class NombreMistere:
             await reaction.message.channel.send("Partie annulée")
             return True
     
-    async def message(self, message: discord.Message):
+    async def message(self, message: discord.Message) -> True | None:
         if self.nb == None:
             return
         try:
