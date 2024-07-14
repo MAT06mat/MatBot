@@ -58,7 +58,7 @@ class NombreMistere:
 
 class MatBot(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="/", intents=discord.Intents.default(), description="Voici la liste de mes commandes :")
+        super().__init__(command_prefix="/", intents=discord.Intents.all(), description="Voici la liste de mes commandes :")
         self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello", "Comment tu vas ?", "Bonjour à tous !"]}
         self.jeu = []
         self.admin = [861240797659136012]
@@ -326,7 +326,20 @@ async def logs(ctx: discord.ApplicationContext, numbers: int = 20):
             continue
         if log["guild"] == ctx.guild_id:
             nb_log += 1
-            logs = f"> {bot.get_channel(log['channel']).name} -> {bot.get_user(log['user']).display_name}: **{log['command']}**\n" + logs
+            
+            channel = bot.get_channel(log['channel'])
+            if channel:
+                channel = channel.name
+            else:
+                channel = "Deleted channel"
+            
+            user = bot.get_user(log['user'])
+            if user:
+                user = user.display_name
+            else:
+                user = "Deleted user"
+            
+            logs = f"> {channel} -> {user}: **{log['command']}**\n" + logs
     
     await response(ctx, embed=True, title=f"Historique des {numbers} dernières commandes :", content=logs)
 
