@@ -36,7 +36,7 @@ class NombreMistere:
             await reaction.message.channel.send("Partie annulée")
             return True
     
-    async def message(self, message: discord.Message) -> True | None:
+    async def message(self, message: discord.Message) -> bool:
         if self.nb == None:
             return
         try:
