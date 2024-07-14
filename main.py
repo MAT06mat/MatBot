@@ -1,4 +1,3 @@
-import discord.ext.commands
 from dotenv import load_dotenv
 from discord.ext import commands
 from googlesearch import search
@@ -128,7 +127,7 @@ class MatBot(commands.Bot):
             return await super().on_message(message)
         else:
             for j in self.jeu:
-                if j.id_user == message.author.id and message.channel == j.channel:
+                if message.channel == j.channel:
                     if await j.message(message):
                         self.jeu.remove(j)
                     return await super().on_message(message)
