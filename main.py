@@ -58,7 +58,7 @@ class NombreMistere:
 
 class MatBot(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="/", intents=discord.Intents.all(), description="Voici la liste de mes commandes :")
+        super().__init__(command_prefix="/", intents=discord.Intents.default(), description="Voici la liste de mes commandes :")
         self.rep = {"Bonjour": ["Bien le boujour !", "Salut !", "Coucou", "Bonjour à toi aussi !", "Salut", "Hey !", "Hello", "Comment tu vas ?", "Bonjour à tous !"]}
         self.jeu = []
         self.admin = [861240797659136012]
